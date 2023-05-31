@@ -1,0 +1,11 @@
+.DS_Store
+
+.vscode/
+.mypy_cache/
+.env
+bootstrap/
+storage/
+auth/
+data/
+dist/
+__pycache__/
