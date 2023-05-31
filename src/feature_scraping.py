@@ -1,6 +1,5 @@
 import json
 import pathlib
-
 import time
 
 import pandas as pd
@@ -81,25 +80,26 @@ def parse_account_data(account_info: dict):
         "Phishing Available": account_data.get("hasPhishing"),
         "AIDA Selected Templates Available": account_data.get(
             "phishingSettings", {}
-        ).get("aidaSelectedAvailable"),
-        "Training Available": account_data.get("hasTraining"),
+        ).get("aidaSelectedAvailable")
+        == True,
         "AIDA Optional Learning Available": account_data.get(
             "learnerExperienceSettings", {}
         ).get("aidaOptionalTrainingEnabled")
         == True,
-        "Vishing Available": account_data.get("hasIvr"),
+        "Training Available": account_data.get("hasTraining"),
         "Physical QR Code Available": account_data.get("hasPhysicalQr"),
         "Security Roles Available": account_data.get("hasPermissions"),
         "Reporting API Available": account_data.get("partnerSubscriptionHasApi"),
         "User Event API Available": account_data.get(
             "partnerSubscriptionHasUserEventApi"
         ),
+        # "Vishing Available": account_data.get("hasIvr"),
     }
 
     all_available = all(pretty_names_payload.values())
 
     return {
-        "All Services Available": all_available,
+        "All Features Available": all_available,
         **pretty_names_payload,
     }
 
