@@ -1,6 +1,6 @@
 # KnowBe4 Scripts
 
-Collection of scripts for scraping KnowBe4
+A collection of scripts for scraping KnowBe4.
 
 ## Logging in
 
