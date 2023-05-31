@@ -1,0 +1,88 @@
+query accountShow($id: Int!) {
+    account(id: $id) {
+        id
+        accountSettingsFlagNames
+        accountType
+        anonymizePhishing
+        archived
+        betaEnabled
+        billingType
+        canDownloadModules
+        city
+        country
+        displayName
+        dmiEnabled
+        domain
+        defaultLocale
+        hasApi
+        hasIvr
+        hasPassless
+        hasPermissions
+        hasPhishing
+        hasPhysicalQr
+        hasSharedDomains
+        hasTraining
+        hasUserEventApi
+        numberOfSeats
+        partnerAccessExpiration
+        partnerDisplayName
+        partnerDomain
+        phishalertEnabled
+        phisherBeta
+        phisherEnabled
+        phisherSubscriptionEndDate
+        phoneNumber
+        refid
+        partnerId
+        samlEnabled
+        state
+        subscriptionEndDate
+        timeZone
+        trialExpirationDate
+        userCount
+        partnerSubscriptionHasApi
+        partnerSubscriptionHasUserEventApi
+        purchasedSkus {
+            skuCode
+            title
+            expiresAt
+            status
+        }
+        languageSettings {
+            adminLocale
+            trainingLocale
+        }
+        userProvisioning {
+            enabled
+            source
+            testMode
+        }
+        phishingSettings {
+            aidaSelectedAvailable
+        }
+        subscriptionObject {
+            subscriptionLevel
+            friendlyName
+            hasApi
+            hasUserEventApi
+            aidaSelectedEnabled
+            aidaRecommendedTrainingEnabled
+        }
+        accountOwners {
+            id
+            confirmedAt
+            email
+            firstName
+            lastName
+        }
+        accountSettingsKcm {
+            kcmEnabled
+            kcmSubscriptionEndDate
+        }
+        learnerExperienceSettings {
+            optionalTrainingEnabled
+            aidaOptionalTrainingEnabled
+            aidaOptionalTrainingAvailable
+        }
+    }
+}

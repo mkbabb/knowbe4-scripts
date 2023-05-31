@@ -9,6 +9,7 @@ packages = [{include = "knowbe4_scripts"}]
 [tool.poetry.dependencies]
 python = "^3.11"
 gql = "^3.4.1"
+requests-toolbelt = "^1.0.0"
 
 
 [tool.poetry.group.dev.dependencies]

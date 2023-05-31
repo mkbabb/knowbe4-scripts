@@ -1,0 +1,72 @@
+query Accounts(
+    $per: Int!
+    $page: Int!
+    $partnerId: Int
+    $status: AccountStatuses
+    $billingType: AccountBillingTypes
+    $search: String
+    $archivedUsers: Boolean
+    $sortField: AccountSortFields
+    $sortDirection: SortDirections
+    $otherPartnersAccounts: AccountPartnerInclusions
+) {
+    accounts(
+        per: $per
+        page: $page
+        partnerId: $partnerId
+        status: $status
+        billingType: $billingType
+        search: $search
+        archivedUsers: $archivedUsers
+        sortField: $sortField
+        sortDirection: $sortDirection
+        otherPartnersAccounts: $otherPartnersAccounts
+    ) {
+        nodes {
+            id
+            accountSettingsFlagNames
+            archived
+            billingType
+            pstCount
+            companyName
+            purchasedCourseCount
+            createdAt
+            domain
+            hasFreePst
+            hasFreePrt
+            hasFreeSpt
+            hasFreeUsb
+            numberOfSeats
+            userCount
+            partnerAccessExpiration
+            percentageUsersPhished
+            percentageUsersTrained
+            phishPronePercentage
+            latestRiskScore
+            subscriptionEndDate
+            partnerDomain
+            partnerDisplayName
+            accountOwner {
+                id
+                confirmedAt
+            }
+            subscriptionObject {
+                id
+                friendlyName
+            }
+            purchasedSkus {
+                skuCode
+                status
+            }
+            languageSettings {
+                adminLocale
+            }
+        }
+        pagination {
+            pages
+            page
+            per
+            totalCount
+        }
+    }
+}
