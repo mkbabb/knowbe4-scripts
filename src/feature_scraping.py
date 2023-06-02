@@ -333,6 +333,8 @@ if __name__ == "__main__":
         "Delta!1:1",
         bold=True,
     )
+    sheets.resize_columns(SHEET_URL, "Delta", width=None)
+
     apply_style_to_df(
         SHEET_URL,
         "Delta",
