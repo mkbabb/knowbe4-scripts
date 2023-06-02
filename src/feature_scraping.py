@@ -1,8 +1,8 @@
 import json
 import pathlib
-import time
-
+import numpy as np
 import pandas as pd
+
 import requests
 from googleapiutils2 import Sheets, SheetSlice, get_oauth2_creds
 from gql import Client, gql
@@ -27,6 +27,20 @@ GRAPH_QL_URL = "https://training.knowbe4.com/graphql"
 QUERY_DIR = pathlib.Path("queries")
 
 SHEET_URL = "https://docs.google.com/spreadsheets/d/14WRf-S-T5MFkk4zOm0Ejsr-3g83EYEQ6dUle9VrDp6I/edit#gid=0"
+
+
+FEATURES_COLS = [
+    "name",
+    "All Features Available",
+    "Phishing Available",
+    "AIDA Selected Templates Available",
+    "Training Available",
+    "AIDA Optional Learning Available",
+    "Physical QR Code Available",
+    "Security Roles Available",
+    "Reporting API Available",
+    "User Event API Available",
+]
 
 
 def get_csrf_token(s: Session):
@@ -76,31 +90,110 @@ def get_account_info(id: int, client: Client):
 def parse_account_data(account_info: dict):
     account_data = account_info["account"]
 
-    pretty_names_payload = {
-        "Phishing Available": account_data.get("hasPhishing"),
+    account_information = {
+        "Account Type": account_data.get("accountType"),
+        "Account Admins": ", ".join(
+            [
+                f"{owner.get('firstName')} {owner.get('lastName')} ({owner.get('email')})"
+                for owner in account_data.get("accountOwners", [])
+            ]
+        ),
+        "Account Notes": account_data.get("notesSettings", {}).get("general"),
+        "Referral ID": account_data.get("refid"),
+        "Allowed Domains": ", ".join(
+            [domain.get("name") for domain in account_data.get("allowedDomains", [])]
+        ),
+    }
+
+    subscription_information = {
+        "Billing Type": account_data.get("billingType"),
+        "Subscription End Date": account_data.get("subscriptionEndDate"),
+        "Number of Seats": account_data.get("numberOfSeats"),
+        "Active Users": account_data.get("userCount"),
+    }
+
+    organization_information = {
+        "Address": f'{account_data.get("city")}, {account_data.get("state")}, {account_data.get("country")}',
+        "Industry": account_data.get("industry", {}).get("enumName"),
+        "Time Zone": account_data.get("timeZone"),
+        "Default Admin Console Language": account_data.get("languageSettings", {}).get(
+            "adminLocale"
+        ),
+        "Default Training Language": account_data.get("languageSettings", {}).get(
+            "trainingLocale"
+        ),
+    }
+
+    account_features = {
+        "Phishing Available": account_data.get("hasPhishing") == True,
         "AIDA Selected Templates Available": account_data.get(
             "phishingSettings", {}
         ).get("aidaSelectedAvailable")
         == True,
+        "Training Available": account_data.get("hasTraining") == True,
         "AIDA Optional Learning Available": account_data.get(
             "learnerExperienceSettings", {}
         ).get("aidaOptionalTrainingEnabled")
         == True,
-        "Training Available": account_data.get("hasTraining"),
-        "Physical QR Code Available": account_data.get("hasPhysicalQr"),
-        "Security Roles Available": account_data.get("hasPermissions"),
-        "Reporting API Available": account_data.get("partnerSubscriptionHasApi"),
+        "Physical QR Code Available": account_data.get("hasPhysicalQr") == True,
+        "Security Roles Available": account_data.get("hasPermissions") == True,
+        "Reporting API Available": account_data.get("partnerSubscriptionHasApi")
+        == True,
         "User Event API Available": account_data.get(
             "partnerSubscriptionHasUserEventApi"
-        ),
-        # "Vishing Available": account_data.get("hasIvr"),
+        )
+        == True,
     }
 
-    all_available = all(pretty_names_payload.values())
+    account_settings = {
+        "SAML Enabled": account_data.get("samlEnabled") == True,
+        "Passwordless Enabled": account_data.get("hasPassless") == True,
+        "DMI Enabled": account_data.get("dmiEnabled") == True,
+        "AIDA Optional Learning Enabled": account_data.get(
+            "learnerExperienceSettings", {}
+        ).get("aidaOptionalTrainingEnabled")
+        == True,
+        "User Provisioning Enabled": account_data.get("userProvisioning", {}).get(
+            "enabled"
+        )
+        == True,
+        "User Provisioning Test Mode": account_data.get("userProvisioning", {}).get(
+            "testMode"
+        )
+        == True,
+        "Phish Alert Enabled": account_data.get("phishalertEnabled") == True,
+    }
+
+    other_products = {
+        "PhishER Enabled": account_data.get("phisherEnabled") == True,
+        "KCM Enabled": account_data.get("accountSettingsKcm", {}).get("kcmEnabled")
+        == True,
+    }
+
+    purchased_add_ons = {
+        "Purchased Add-ons": ", ".join(
+            [
+                f"{sku.get('title')} Status: {sku.get('status')} {sku.get('expiresAt')}"
+                for sku in account_data.get("purchasedSkus", [])
+            ]
+        ),
+    }
+
+    account_data = {
+        **account_information,
+        **subscription_information,
+        **organization_information,
+        **account_features,
+        **account_settings,
+        **other_products,
+        **purchased_add_ons,
+    }
+
+    all_available = all(account_features.values())
 
     return {
         "All Features Available": all_available,
-        **pretty_names_payload,
+        **account_data,
     }
 
 
@@ -126,28 +219,9 @@ def create_client() -> Client:
         return client
 
 
-THROTTLE_TIME = 30
-BATCH_SIZE = 30
-
-
-def batch_update(sheet_url: str, data: dict, sheets: Sheets, dump: bool = False):
-    if not dump and data is not None:
-        sheets._batched_data |= data
-
-    prev_time = sheets._prev_time
-    curr_time = time.perf_counter()
-
-    dt = curr_time - prev_time if prev_time is not None else THROTTLE_TIME
-
-    if dump or (dt >= THROTTLE_TIME and len(sheets._batched_data) >= BATCH_SIZE):
-        sheets._prev_time = curr_time
-
-        sheets.batch_update(sheet_url, sheets._batched_data, align_columns=True)
-        sheets._batched_data = {}
-
-
-def get_data(sheets: Sheets):
+def update_data(sheets: Sheets):
     client = create_client()
+    sheets.clear(SHEET_URL, "Sheet1")
 
     for n, account in enumerate(get_accounts(client=client)):
         n += 1
@@ -167,18 +241,101 @@ def get_data(sheets: Sheets):
             print("Failed to parse account data for", id, name)
 
         slc = SheetSlice["Sheet1", n + 1, ...]
-        data = {slc: [account_data]}
 
-        batch_update(SHEET_URL, data=data, sheets=sheets)
+        sheets.batch_update(SHEET_URL, data={slc: [account_data]}, batch_size=30)
 
-    batch_update(SHEET_URL, data={}, sheets=sheets, dump=True)
+    sheets.batched_update_remaining(SHEET_URL)
+    sheets.resize_columns(SHEET_URL, "Sheet1", width=None)
+
+
+def get_data(sheets: Sheets) -> pd.DataFrame:
+    return sheets.to_frame(sheets.values(SHEET_URL, "Sheet1")).set_index("id")
+
+
+def apply_style_to_df(
+    spreadsheet_id: str,
+    sheet_name: str,
+    diff_ixs: pd.DataFrame,
+    sheets: Sheets,
+):
+    sheet_id = sheets.get(SHEET_URL, sheet_name)["properties"]["sheetId"]
+
+    cell_format = sheets._create_cell_format(
+        bold=True,
+        # background_color="#F2E8E8",
+        cell_format={
+            "backgroundColor": {"red": 0.95, "green": 0.9, "blue": 0.9, "alpha": 1}
+        },
+    )
+
+    diff_cells = diff_ixs.stack()
+    diff_cells = diff_cells[diff_cells]
+
+    requests = []
+    for cell in diff_cells.index:
+        *row_id, column_name = cell
+
+        row = diff_ixs.index.get_loc(tuple(row_id)) + 2
+        col = diff_ixs.columns.get_loc(column_name) + 2
+
+        body = sheets._create_format_body(
+            sheet_id,
+            start_row=row,
+            end_row=row,
+            start_col=col,
+            end_col=col,
+            cell_format=cell_format,
+        )
+        requests.append(body)
+
+    sheets.batch_update_spreadsheet(spreadsheet_id, body={"requests": requests})
+
+
+def get_delta(prev_df: pd.DataFrame, curr_df: pd.DataFrame):
+    prev_df = prev_df.reindex_like(curr_df)
+
+    stacked_df = pd.concat(
+        [curr_df, prev_df], keys=["Current", "Previous"], names=["Version"]
+    ).sort_index(level=0)
+
+    ixs = (curr_df != prev_df) & ~(curr_df.isna() & prev_df.isna())
+    tmp = ixs.index[ixs.any(axis=1)]
+    stacked_df = stacked_df[stacked_df.index.get_level_values(1).isin(tmp)]
+
+    stacked_df_ixs = stacked_df[ixs]
+    diff_ixs = ~pd.isna(stacked_df_ixs)
+
+    return (
+        stacked_df,
+        diff_ixs,
+    )
 
 
 if __name__ == "__main__":
     creds = get_oauth2_creds("auth/friday-institute-reports.credentials.json")
     sheets = Sheets(creds)
 
-    sheets._batched_data = {}
-    sheets._prev_time = None
+    sheets.reset_sheet(SHEET_URL, "Delta")
 
-    get_data(sheets=sheets)
+    prev_df = get_data(sheets=sheets)
+    # update_data(sheets=sheets)
+    curr_df = get_data(sheets=sheets)
+
+    t_prev_df = prev_df[FEATURES_COLS]
+    t_curr_df = curr_df[FEATURES_COLS]
+
+    delta_df, diff_ixs = get_delta(t_prev_df, t_curr_df)
+    delta_df.reset_index(level=0, drop=False, inplace=True)
+
+    sheets.update(SHEET_URL, "Delta", sheets.from_frame(delta_df))
+    sheets.format(
+        SHEET_URL,
+        "Delta!1:1",
+        bold=True,
+    )
+    apply_style_to_df(
+        SHEET_URL,
+        "Delta",
+        diff_ixs,
+        sheets,
+    )
