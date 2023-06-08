@@ -1,0 +1,85 @@
+mutation AccountUpdate($id: Int, $attributes: AccountAttributes!) {
+    accountUpdate(id: $id, attributes: $attributes) {
+        node {
+            id
+            ...SamlSettingsProperties
+            ...PhishalertSettingsProperties
+            ...UserProvisioningPublicProperties
+        }
+        errors {
+            field
+            placeholders
+            reason
+        }
+    }
+}
+
+fragment PhishalertSettingsProperties on Account {
+    phishalertSettings {
+        id
+        name
+        iconUrl
+        isDefaultIcon
+        defaultIconUrl
+        license
+        emailForward
+        emailForwardPhishing
+        emailForwardSpam
+        emailForwardUnknown
+        emailFormat
+        alsoCc
+        enableForwarding
+        pullLocaleForPhishing
+        allowUsersToComment
+        globalDefault
+        disableUnknownDisposition
+        includeHeadersInEmailBody
+        disableCridValidation
+        sendToMicrosoft
+        excludeEmailBodyInReport
+        outlookUrl
+        hybridManifest
+        graphManifest
+        chromeExtension
+        phishalertLanguages {
+            id
+            isDefault
+            emailForwardSubject
+            confirmationMessage
+            showMessageReportNonPst
+            messageReportNonPst
+            showMessageReportPst
+            messageReportPst
+            timeoutReportPst
+            reportButtonText
+            reportGroupText
+            language
+            _destroy
+        }
+    }
+}
+
+fragment SamlSettingsProperties on Account {
+    samlSettings {
+        id
+        entityId
+        signSamlRequests
+        disableNonSamlLogins
+        allowAdminWithMfaLoginBypass
+    }
+}
+
+fragment UserProvisioningPublicProperties on Account {
+    userProvisioning {
+        allowed
+        enabled
+        legacyScimStatus
+        scimStatus
+        scimStatusChangedAt
+        scimTenantUrl
+        scimV2TenantUrl
+        showGroupDomain
+        source
+        testMode
+    }
+}
