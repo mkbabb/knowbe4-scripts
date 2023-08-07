@@ -8,12 +8,8 @@ import requests
 from googleapiutils2 import Sheets, SheetSlice, get_oauth2_creds
 from jinja2_markdown import MarkdownExtension
 
-from src.api import (
-    create_gql_client,
-    get_account_info,
-    get_accounts,
-    parse_account_data,
-)
+import src.api as api
+from src.utils import create_gql_client
 
 FEATURES_COLS = [
     "name",
@@ -32,13 +28,16 @@ FEATURES_COLS = [
 def update_feature_data(sheets: Sheets, spreadsheet_id: str, creds: dict):
     client = create_gql_client(creds)
 
-    sheets.clear(spreadsheet_id, "Sheet1")
-
-    for n, account in enumerate(get_accounts(client=client)):
+    for n, account in enumerate(api.accounts(client=client)):
         n += 1
 
         id, name = account["id"], account["companyName"]
         name = str(name).strip().replace("/", "-")
+
+        if "Friday" in name:
+            print("s")
+        else:
+            continue
 
         account_data = {
             "id": id,
@@ -46,17 +45,11 @@ def update_feature_data(sheets: Sheets, spreadsheet_id: str, creds: dict):
         }
 
         try:
-            account_info = get_account_info(id, client=client)
-            account_data |= parse_account_data(account_info)
+            account_info = api.accountShow(id, client=client)
+            account_data |= api.parse_account_data(account_info)
+            print(account_data)
         except Exception as e:
             print("Failed to parse account data for", id, name)
-
-        slc = SheetSlice["Sheet1", n + 1, ...]
-
-        sheets.batch_update(spreadsheet_id, data={slc: [account_data]}, batch_size=30)
-
-    sheets.batched_update_remaining(spreadsheet_id)
-    sheets.resize_columns(spreadsheet_id, "Sheet1", width=None)
 
 
 def get_feature_df(sheets: Sheets, spreadsheet_id: str) -> pd.DataFrame | None:
@@ -150,11 +143,85 @@ def send_emails(to: str, subject: str, body: str, zapier_url: str):
     return r.json()
 
 
+# def main():
+#     config_path = pathlib.Path("auth/config.json")
+#     config = json.loads(config_path.read_text())
+
+#     zapier_url = config["zapier"]["url"]
+
+#     knowbe4_features_url = config["google"]["urls"]["knowbe4_features"]
+
+#     creds = get_oauth2_creds(config["google"]["credentials_path"])
+#     sheets = Sheets(creds)
+
+#     knowbe4_creds = json.loads(
+#         pathlib.Path(config["knowbe4"]["credentials_path"]).read_bytes()
+#     )
+
+#     prev_df = get_feature_df(sheets=sheets, spreadsheet_id=knowbe4_features_url)
+
+#     update_feature_data(
+#         sheets=sheets, spreadsheet_id=knowbe4_features_url, creds=knowbe4_creds
+#     )
+
+#     if prev_df is None:
+#         print("No previous data found, skipping delta")
+#         return
+
+#     sheets.reset_sheet(knowbe4_features_url, "Delta")
+#     curr_df = get_feature_df(sheets=sheets, spreadsheet_id=knowbe4_features_url)
+
+#     t_prev_df = prev_df[FEATURES_COLS]
+#     t_curr_df = curr_df[FEATURES_COLS]
+
+#     delta_df, diff_ixs = get_delta(prev_df=t_prev_df, curr_df=t_curr_df)
+
+#     if not len(delta_df):
+#         print("No changes found, skipping delta")
+#         return
+
+#     delta_df.reset_index(level=0, drop=False, inplace=True)
+
+#     sheets.update(knowbe4_features_url, "Delta", sheets.from_frame(delta_df))
+#     sheets.format(
+#         knowbe4_features_url,
+#         SheetSlice["Delta", 1, ...],
+#         bold=True,
+#     )
+#     sheets.resize_columns(knowbe4_features_url, "Delta", width=None)
+
+#     apply_diff_style_to_df(
+#         knowbe4_features_url,
+#         "Delta",
+#         diff_ixs,
+#         sheets,
+#     )
+
+#     email_list = sheets.to_frame(sheets.values(knowbe4_features_url, "Email List"))
+#     to = email_list["email"].tolist()
+
+#     curr_date = datetime.now().strftime("%Y-%m-%d")
+#     subject = f"{curr_date} KnowBe4 Report"
+
+#     body = create_email_body(
+#         {
+#             "curr_date": curr_date,
+#             "delta_df": delta_df,
+#             "file_url": knowbe4_features_url,
+#         }
+#     )
+
+#     send_emails(
+#         to=to,
+#         subject=subject,
+#         body=body,
+#         zapier_url=zapier_url,
+#     )
+
+
 def main():
     config_path = pathlib.Path("auth/config.json")
     config = json.loads(config_path.read_text())
-
-    zapier_url = config["zapier"]["url"]
 
     knowbe4_features_url = config["google"]["urls"]["knowbe4_features"]
 
@@ -165,64 +232,8 @@ def main():
         pathlib.Path(config["knowbe4"]["credentials_path"]).read_bytes()
     )
 
-    prev_df = get_feature_df(sheets=sheets, spreadsheet_id=knowbe4_features_url)
-
     update_feature_data(
         sheets=sheets, spreadsheet_id=knowbe4_features_url, creds=knowbe4_creds
-    )
-
-    if prev_df is None:
-        print("No previous data found, skipping delta")
-        return
-
-    sheets.reset_sheet(knowbe4_features_url, "Delta")
-    curr_df = get_feature_df(sheets=sheets, spreadsheet_id=knowbe4_features_url)
-
-    t_prev_df = prev_df[FEATURES_COLS]
-    t_curr_df = curr_df[FEATURES_COLS]
-
-    delta_df, diff_ixs = get_delta(prev_df=t_prev_df, curr_df=t_curr_df)
-
-    if not len(delta_df):
-        print("No changes found, skipping delta")
-        return
-
-    delta_df.reset_index(level=0, drop=False, inplace=True)
-
-    sheets.update(knowbe4_features_url, "Delta", sheets.from_frame(delta_df))
-    sheets.format(
-        knowbe4_features_url,
-        SheetSlice["Delta", 1, ...],
-        bold=True,
-    )
-    sheets.resize_columns(knowbe4_features_url, "Delta", width=None)
-
-    apply_diff_style_to_df(
-        knowbe4_features_url,
-        "Delta",
-        diff_ixs,
-        sheets,
-    )
-
-    email_list = sheets.to_frame(sheets.values(knowbe4_features_url, "Email List"))
-    to = email_list["email"].tolist()
-
-    curr_date = datetime.now().strftime("%Y-%m-%d")
-    subject = f"{curr_date} KnowBe4 Report"
-
-    body = create_email_body(
-        {
-            "curr_date": curr_date,
-            "delta_df": delta_df,
-            "file_url": knowbe4_features_url,
-        }
-    )
-
-    send_emails(
-        to=to,
-        subject=subject,
-        body=body,
-        zapier_url=zapier_url,
     )
 
 

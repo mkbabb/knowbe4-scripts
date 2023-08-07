@@ -1,0 +1,48 @@
+query PartnerAdmins(
+    $all: Boolean
+    $partnerId: Int
+    $search: String
+    $sortField: PartnerAdminsSortFields
+    $sortDirection: SortDirections
+    $per: Int = 25
+    $page: Int = 1
+) {
+    partnerAdmins(
+        all: $all
+        partnerId: $partnerId
+        search: $search
+        sortField: $sortField
+        sortDirection: $sortDirection
+        per: $per
+        page: $page
+    ) {
+        nodes {
+            confirmedAt
+            createdAt
+            currentSignInAt
+            displayName
+            email
+            extension
+            firstName
+            fullAdmin
+            id
+            lastName
+            locale
+            mfaEnabled
+            mobilePhoneNumber
+            onlineShop
+            otpCode
+            otpSecretKey
+            partnerId
+            phoneNumber
+            timeZone
+            updatedAt
+        }
+        pagination {
+            pages
+            page
+            per
+            totalCount
+        }
+    }
+}

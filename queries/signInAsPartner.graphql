@@ -1,0 +1,5 @@
+mutation SignInAsPartner($id: Int, $ols: Boolean) {
+    signInAsPartner(id: $id, ols: $ols) {
+        node
+    }
+}

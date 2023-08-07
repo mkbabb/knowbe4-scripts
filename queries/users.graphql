@@ -1,0 +1,93 @@
+query Users(
+    $all: Boolean
+    $status: UserStatusFilters
+    $sortBy: UserSortFields
+    $sortDirection: SortDirections
+) {
+    users(all: $all, status: $status, sortBy: $sortBy, sortDirection: $sortDirection) {
+        nodes {
+            id
+            accountDomain
+            accountId
+            admin
+            adminLocale
+            aidaOptionalTrainingEnabled
+            allowAnalytics
+            archivable
+            archived
+            archivedAt
+            billingType
+            campaignRecipientsReportableDeliveredCount
+            comment
+            companyName
+            confirmationLink
+            confirmationSentAt
+            confirmedAt
+            createdAt
+            currentPpp
+            currentSignInIp
+            customDate1
+            customDate2
+            customField1
+            customField2
+            customField3
+            customField4
+            customHelpEnabled
+            customHelpUrl
+            department
+            deviceLinkToken
+            disableNonSamlLogins
+            division
+            domain
+            email
+            employeeNumber
+            employeeStartDate
+            extension
+            firstName
+            groupIds
+            jobTitle
+            language
+            lastName
+            lastSignInAt
+            ldapEnabled
+            ldapObjectGuid
+            locale
+            location
+            lxDisableTour
+            managerEmail
+            managerName
+            managerPhishingEnabled
+            managerRiskScoreEnabled
+            managerTrainingEnabled
+            managerUserInfoEnabled
+            mobileAppEnabled
+            mobilePhoneNumber
+            optionalTrainingEnabled
+            organization
+            outOfOfficeUntil
+            passlessEnabled
+            passlessExpiresIn
+            passlessTokenGeneratedAt
+            phisherEnabled
+            phishingLocale
+            phoneNumber
+            popcornTheaterReduceMotion
+            riskScore
+            samlEnabled
+            signInCount
+            slackEnabled
+            subscriptionLevel
+            teamsEnabled
+            timeZone
+            trainingLocale
+            updatedAt
+            userUrl
+        }
+        pagination {
+            pages
+            page
+            per
+            totalCount
+        }
+    }
+}

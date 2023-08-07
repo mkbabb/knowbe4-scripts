@@ -1,89 +1,89 @@
-import pathlib
 from typing import Iterable
 
-import requests
-from gql import Client, gql
-from gql.transport.requests import RequestsHTTPTransport
-from requests import Session
+from gql import Client
 
-DEFAULT_HEADERS = {
-    "Accept": "application/json",
-    "Accept-Language": "en-US,en;q=0.9",
-    "Content-Type": "application/json;charset=utf-8",
-    "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.2 Safari/605.1.15",
-    "X-CSRF-Token": "undefined",
-    "X-Requested-With": "XMLHttpRequest",
-}
-
-LOGIN_URL = "https://training.knowbe4.com/spa/auth/login"
-
-SESSION_URL = " https://training.knowbe4.com/spa/session"
-
-GRAPH_QL_URL = "https://training.knowbe4.com/graphql"
-
-QUERY_DIR = pathlib.Path("queries")
+from .utils import graphql_query, paginated_query, PAGINATION_START, PAGINATION_PER
 
 
-def create_gql_client(creds: dict) -> Client:
-    with requests.Session() as s:
-        s.headers.update(DEFAULT_HEADERS)
-        s.post(LOGIN_URL, json=creds)
-
-        csrf = get_csrf_token(s)
-        s.headers.update({"X-CSRF-Token": csrf})
-
-        transport = RequestsHTTPTransport(
-            url=GRAPH_QL_URL,
-            headers=s.headers,  # type: ignore
-            cookies=s.cookies,
-            use_json=True,
-        )
-        client = Client(transport=transport, fetch_schema_from_transport=True)
-        return client
-
-
-def get_csrf_token(s: Session):
-    r = s.get(SESSION_URL)
-    session_data = r.json()
-    return session_data["kmsat"]["csrf"]
+@paginated_query
+@graphql_query
+def accounts(
+    client: Client, per: int = PAGINATION_PER, page: int = PAGINATION_START
+) -> dict:
+    return {
+        "variable_values": {
+            "per": per,
+            "page": page,
+            "search": "",
+            "archivedUsers": False,
+            "status": "ACTIVE",
+            "billingType": "ANY",
+            "sortField": "ORGANIZATION",
+            "sortDirection": "ASCENDING",
+            "otherPartnersAccounts": "ALL",
+        }
+    }
 
 
-def get_accounts(client: Client, per: int = 25, page: int = 1) -> Iterable[dict]:
-    query_path = QUERY_DIR / "get_accounts.graphql"
-    query = gql(query_path.read_text())
-
-    while True:
-        result = client.execute(
-            query,
-            variable_values={
-                "per": per,
-                "page": page,
-                "search": "",
-                "archivedUsers": False,
-                "status": "ACTIVE",
-                "billingType": "ANY",
-                "sortField": "ORGANIZATION",
-                "sortDirection": "ASCENDING",
-                "otherPartnersAccounts": "ALL",
-            },
-        )
-
-        yield from result["accounts"]["nodes"]
-
-        if (
-            result["accounts"]["pagination"]["page"]
-            == result["accounts"]["pagination"]["pages"]
-        ):
-            break
-
-        page += 1
+@paginated_query
+@graphql_query
+def users(
+    client: Client, per: int = PAGINATION_PER, page: int = PAGINATION_START
+) -> dict:
+    return {
+        "variable_values": {
+            "per": per,
+            "page": page,
+            "status": "ACTIVE",
+            "sortField": "ORGANIZATION",
+            "sortDirection": "ASCENDING",
+        }
+    }
 
 
-def get_account_info(id: int, client: Client) -> dict:
-    query_path = QUERY_DIR / "account_info.graphql"
-    query = gql(query_path.read_text())
+@paginated_query
+@graphql_query
+def partnerAdmins(
+    client: Client, per: int = PAGINATION_PER, page: int = PAGINATION_START
+) -> dict:
+    return {
+        "variable_values": {
+            "per": per,
+            "page": page,
+            "search": "",
+            "sortField": "EMAIL",
+            "sortDirection": "ASCENDING",
+        }
+    }
 
-    return client.execute(query, variable_values={"id": id})
+
+@graphql_query
+def accountShow(id: int, client: Client) -> dict:
+    return {"variable_values": {"id": id}}
+
+
+@graphql_query
+def signInAsPartner(id: int, client: Client) -> dict:
+    return {
+        "variable_values": {
+            "id": id,
+        }
+    }
+
+
+@graphql_query
+def partnerAdminCreate(partnerId: int, attributes: dict, client: Client) -> dict:
+    return {"variable_values": {"partnerId": partnerId, "attributes": attributes}}
+
+
+@graphql_query
+def userGrantAdmin(id: int, client: Client) -> dict:
+    return {"variable_values": {"userIds": [id]}}
+
+
+@graphql_query
+def introspect(client: Client) -> dict:
+    return
 
 
 def parse_account_data(account_info: dict) -> dict:

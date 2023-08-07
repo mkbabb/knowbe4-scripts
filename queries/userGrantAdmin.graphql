@@ -1,0 +1,7 @@
+mutation GrantAdmin($accountIds: [Int!], $userIds: [Int!]!) {
+    userGrantAdmin(accountIds: $accountIds, userIds: $userIds) {
+        node {
+            id
+        }
+    }
+}

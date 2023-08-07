@@ -1,0 +1,7 @@
+mutation PartnerCreate($partnerId: Int!, $attributes: PartnerAdminAttributes!) {
+    partnerAdminCreate(partnerId: $partnerId, attributes: $attributes) {
+        node {
+            partnerId
+        }
+    }
+}

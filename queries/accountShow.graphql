@@ -42,6 +42,7 @@ query accountShow($id: Int!) {
         userCount
         partnerSubscriptionHasApi
         partnerSubscriptionHasUserEventApi
+        hasWebhooks
         purchasedSkus {
             skuCode
             title
