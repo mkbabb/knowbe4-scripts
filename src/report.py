@@ -34,18 +34,13 @@ def update_feature_data(sheets: Sheets, spreadsheet_id: str, creds: dict):
         id, name = account["id"], account["companyName"]
         name = str(name).strip().replace("/", "-")
 
-        if "Friday" in name:
-            print("s")
-        else:
-            continue
-
         account_data = {
             "id": id,
             "name": name,
         }
 
         try:
-            account_info = api.accountShow(id, client=client)
+            account_info = api.accountShow(id=id, client=client)
             account_data |= api.parse_account_data(account_info)
             print(account_data)
         except Exception as e:
