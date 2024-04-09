@@ -1,8 +1,6 @@
-from typing import Iterable
-
 from gql import Client
 
-from .utils import graphql_query, paginated_query, PAGINATION_START, PAGINATION_PER
+from src.utils import PAGINATION_PER, PAGINATION_START, graphql_query, paginated_query
 
 
 @paginated_query

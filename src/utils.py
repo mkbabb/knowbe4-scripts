@@ -1,7 +1,6 @@
 import pathlib
 from functools import wraps
 from itertools import chain
-from pathlib import Path
 from typing import Callable, Iterable, ParamSpec, TypeVar
 
 import requests
@@ -85,7 +84,7 @@ def graphql_query(decorated_fn: Callable[P, R]) -> Callable[P, R]:
 
         client = find_arg_by_type(args, kwargs, Client)
 
-        return client.execute(query, **ret)
+        return client.execute(query, **ret) # type: ignore
 
     return wrapper
 

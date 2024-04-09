@@ -1,11 +1,10 @@
 import json
 import pathlib
-from datetime import datetime
 
 import jinja2
 import pandas as pd
 import requests
-from googleapiutils2 import Sheets, SheetSlice, get_oauth2_creds
+from googleapiutils2 import Sheets, get_oauth2_creds
 from jinja2_markdown import MarkdownExtension
 
 import src.api as api
